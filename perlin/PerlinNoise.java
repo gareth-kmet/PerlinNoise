@@ -6,17 +6,13 @@ import util.Util;
 import util.Vector2f;
 
 /**
- * Built for static generation
- * 
- * Perlin Noise algorithm built for a single chunk with infinite generation
- * <br> Can be used multiple times on the same chunk
- * <br> Uses strict octaves and lacunarity as octave chunks must remain within the main chunk's borders with no half pixels
- * <br>
+ * Perlin Noise algorithm built for infinite chunk generation
+ * <br>Uses strict octaves and lacunarity as octave chunks must remain within the main chunk's borders with no half pixels
  * <br>Adapted from the algorithm mentioned in <a href="https://www.youtube.com/watch?v=ZsEnnB2wrbI"> this video</a>
  * @author Gareth Kmet
  *
  */
-public final class PerlinNoise {
+public final class PerlinNoise{
 	/**
 	 * Constants representing the index of corner masks used throughout
 	 * <p><b>Masks</b> - Total number of masks
@@ -33,167 +29,168 @@ public final class PerlinNoise {
 	 * The Random instance used by the Perlin Noise to generate chunk influence vectors
 	 */
 	private final Random random;
-	/**
-	 * The chunk of this instance
-	 */
-	private final PerlinChunk chunk;
 	
 	private int octaves = 1;
 	private int lacunarity = 1;
-	private float persistence = 1;
+	private float persistence = 0.5f;
+	
+	private final int psize;
+	
+	private PerlinOctave[] octaveDataSets = {};
 	
 	/**
-	 * Represents all the minor chunks of the objects
-	 * <br>Is <code>null</code> if {@link #octaves} is <code>0</code>
+	 * Generates a new PerlinNoise algorithm instance with a set square pixel size
+	 * @param psize - the amount of pixels that the chunk is wide and tall
 	 */
-	private PerlinNoise[][] nextOctave = null;
-	
-	
-	/**
-	 * Generates a new PerlinNoise instance with a new generated chunk
-	 * 
-	 * @param cx - the chunk x location
-	 * @param cy - the chunk y location
-	 * @param psize - the amount of pixels that the chunk is wide
-	 */
-	public PerlinNoise(int cx, int cy, int psize) {
+	public PerlinNoise(int psize) {
+		this.psize=psize;
 		random = new Random();
-		chunk = new PerlinChunk(cx,cy,psize);
+		setOctaves(1,1);
 	}
 	
 	/**
-	 * Sets this instance and all octaves' instances' octaves, lacunarity, and persistence
-	 * 
-	 * @param octaves - the number of octaves to go through, must be greater than 0
-	 * @param lacunarity - the number of chunks that go into the width of each minor chunk of an octave, <code>psize</code> of each minor chunk must be divisible by this number
-	 * @param persistence - the exponential strength of each octave, should be less than 1
+	 * Sets the octaves and lacunarity of the algorithm
+	 * <br><b>Assertion:</b> the {@link PerlinOctave#psize} must be divisible by <code>lacunarity^octave</code>
+	 * @param octaves - the number of octaves to go through
+	 * @param lacunarity - the number of subdivisions of chunks per octave
 	 */
-	public void setOctaves(int octaves, int lacunarity, float persistence) {
-		this.setOctaves(octaves, lacunarity);
-		this.setPersistence(persistence);
+	public void setOctaves(int octaves, int lacunarity) {
+		octaveDataSets = new PerlinOctave[octaves];
+		
+		this.octaves = octaves;
+		this.lacunarity=lacunarity;
+		int psize = this.psize;
+		for(int i=0; i<octaves;i++) {
+			octaveDataSets[i] = new PerlinOctave(i, psize);
+			psize/=lacunarity;
+		}
+		
 	}
 	
 	/**
-	 * Sets this instance and all octaves' instances' persistence
+	 * Sets the octaves of the algorithm
+	 * <br><b>Assertion:</b> the {@link PerlinOctave#psize} must be divisible by <code>lacunarity^octave</code>
+	 * @param octaves - the number of octaves to go through
+	 */
+	public void setOctaves(int octaves) {
+		setOctaves(octaves, lacunarity);
+		//TODO optimize;
+	}
+	
+	/**
+	 * Sets the lacunarity of the algorithm
+	 * <br><b>Assertion:</b> the {@link PerlinOctave#psize} must be divisible by <code>lacunarity^octave</code>
+	 * @param lacunarity - the number of subdivisions of chunks per octave
+	 */
+	public void setLacunarity(int lacunarity) {
+		setOctaves(octaves, lacunarity);
+	}
+	
+	/**
+	 * Sets the persistence of the algorithm
 	 * @param persistence - the exponential strength of each octave, should be less than 1
 	 */
 	public void setPersistence(float persistence) {
-		if(persistence == this.persistence) return;
-		
 		this.persistence=persistence;
-		if(nextOctave!=null) {
-			for(PerlinNoise[] is : nextOctave) {for(PerlinNoise i : is) {
-				i.setPersistence(persistence);
-			}}
-		}
 	}
-	
 	/**
-	 * Sets this instance and all octaves' instances' octaves and lacunarity
-	 * 
-	 * @param octaves - the number of octaves to go through, must be greater than 0
-	 * @param lacunarity - the number of chunks that go into the width of each minor chunk of an octave, <code>psize</code> of each minor chunk must be divisible by this number
+	 * Sets the octaves, lacunarity, and persistence of the algorithm
+	 * <br><b>Assertion:</b> the {@link PerlinOctave#psize} must be divisible by <code>lacunarity^octave</code>
+	 * @param octaves - the number of octaves to go through
+	 * @param lacunarity - the number of subdivisions of chunks per octave
+	 * @param persistence - the exponential strength of each octave, should be less than 1
 	 */
-	public void setOctaves(int octaves, int lacunarity) {
-		if(octaves==this.octaves) return;
-		
-		if(lacunarity==this.lacunarity) {
-			setOctaves(octaves);
-		}
-		
-		if(nextOctave != null) {
-			for(PerlinNoise[] is : nextOctave) {for(PerlinNoise i:is) {
-				i.delete();
-			}}
-		}
-		
-		this.octaves=octaves;
-		this.lacunarity=lacunarity;
-		
-		if(octaves==1) {
-			nextOctave = null;
-			return;
-		}
-		
-		nextOctave = new PerlinNoise[lacunarity][lacunarity];
-		
-		for(int i=0; i<lacunarity; i++) {for(int j=0; j<lacunarity;j++) {
-			int x = chunk.x*lacunarity+i;
-			int y = chunk.y*lacunarity+j;
-			int psize = chunk.pixelSize/lacunarity;
-			nextOctave[i][j] = new PerlinNoise(x,y,psize);
-			nextOctave[i][j].setOctaves(octaves-1, lacunarity);
-		}}
+	public void setOctaves(int octaves, int lacunarity, float persistence) {
+		setOctaves(octaves, lacunarity);
+		setPersistence(persistence);
 	}
 	
 	/**
-	 * Sets this instance and all octaves' instances' octaves
-	 * @param octaves - the number of octaves to go through, must be greater than 0
-	 */
-	public void setOctaves(int octaves) {
-		//TODO
-	}
-	
-	/**
-	 * Runs the perlin algorithm on this chunk
+	 * Runs the perlin noise algorithm for a chunk located at position <code>(cx,cy)</code>
 	 * @param seed - the seed to randomly generate influence vectors
-	 * @return {@link #PerlinRecord}
+	 * @param cx - the x position of the chunk
+	 * @param cy - the y position of the chunk
+	 * @return {@link PerlinReturn} - the values and relative min/max of the result
 	 */
-	public PerlinReturn perlin(long seed) {
-		genInfluenceVectors(seed);
+	public PerlinReturn perlin(long seed, int cx, int cy){
+		PerlinOctave oct = octaveDataSets[0];
 		
-		float[][] pixs = Perlinification.perlinAChunk(chunk);
-		float[][] octavePixs = perlinOctave(seed);
+		float[][] values = new float[oct.psize()][oct.psize()];
+		
+		int ocx = cx;
+		int ocy = cy;
+		
+		Vector2f[] invecs = genInfluenceVectors(seed, ocx, ocy);
+		float[][] pixs = Perlinification.perlinAChunk(invecs, oct);
+		
+		float[][] subOctPixs;
+		if(octaves>1) {
+			subOctPixs = perlinOctave(seed+1, ocx, ocy, 1);
+		}else {
+			subOctPixs = new float[oct.psize()][oct.psize()];
+		}
+			
 		
 		float max = Float.NEGATIVE_INFINITY, min=Float.POSITIVE_INFINITY;
 		
-		for(int i=0; i<chunk.pixelSize; i++) {for(int j=0; j<chunk.pixelSize; j++) {
-			pixs[i][j]+=octavePixs[i][j]*persistence;
-			float f=pixs[i][j];
-			max = Math.max(max, f);
-			min = Math.min(min, f);
+		for(int x=0;x<oct.psize();x++) {for(int y=0;y<oct.psize();y++) {
+			float p = pixs[x][y] + subOctPixs[x][y] * persistence;
+			values[x][y]=p;
+			max = Math.max(max, p);
+			min = Math.min(min, p);
 		}}
 		
-		return new PerlinReturn(pixs,max,min);
+		return new PerlinReturn(values,max,min);
 	}
 	
 	/**
-	 * Runs the perlin algorithm on all octave chunks and creates a <code>float[][]</code> containing all results
-	 * @param seed - the seed for the octaves' perlin algorithm
-	 * @return <b><code>float[][]</code></b> - the square grid of final results of all octaves with a size of <code>chunk.pixelSize</code>
+	 * Runs the perlin algorithm recursively on the suboctaves until there are no more octaves
+	 * 
+	 * @param seed - the seed to generate random influence vectors
+	 * @param cx - the x position of the previous octave's chunk
+	 * @param cy - the y position of the previous octave's chunk
+	 * @param octn - the number of the current octave
+	 * @return <code>float[][]</code> - array with total values of all pixels in the octave. Size of the square array is equal to <code>oct(n-1).psize()</code>
 	 */
-	private float[][] perlinOctave(long seed){
-		seed += 1;
+	private float[][] perlinOctave(long seed, int cx, int cy, int octn) {
 		
-		float[][] pixs = new float[chunk.pixelSize][chunk.pixelSize];
+		PerlinOctave oct = octaveDataSets[octn];
 		
-		if(nextOctave==null) {
-			return pixs;
-		}
+		float[][] values = new float[oct.psize()*lacunarity][oct.psize()*lacunarity];
 		
 		for(int i=0; i<lacunarity; i++) {for(int j=0; j<lacunarity; j++) {
-			PerlinNoise p = nextOctave[i][j];
-			int psize = p.chunk.pixelSize;
+			int ocx = cx*lacunarity+i;
+			int ocy = cy*lacunarity+j;
 			
-			float[][] pr = p.perlin(seed).values;
+			Vector2f[] invecs = genInfluenceVectors(seed, ocx, ocy);
+			float[][] pixs = Perlinification.perlinAChunk(invecs, oct);
 			
-			for(int x=0;x<psize;x++) {for(int y=0; y<psize;y++) {
-				pixs[i*psize+x][j*psize+y] = pr[x][y];
+			float[][] subOctPixs;
+			if(octn<octaves-1) {
+				subOctPixs = perlinOctave(seed+1, ocx, ocy, octn+1);
+			}else {
+				subOctPixs = new float[oct.psize()][oct.psize()];
+			}
+			
+			
+			for(int x=0;x<oct.psize();x++) {for(int y=0;y<oct.psize();y++) {
+				float p = pixs[x][y] + subOctPixs[x][y] * persistence;
+				values[i*oct.psize()+x][j*oct.psize()+y]=p;
 			}}
 		}}
 		
-		return pixs;
-		
+		return values;
 	}
 	
 	/**
-	 * Generates influence vectors for this instance's chunk
-	 * <p>Influence vectors will be a normalized vector in a random direction
-	 * <br>One influence vector is associated with each {@link PerlinNoise#MASKS}
-	 * @param seed - the seed to use for the random generation of the influence vectors
+	 * Generates random normalized influence vectors for a chunk at a given position
+	 * @param seed - the seed to randomly generate the influence vectors
+	 * @param cx - the x position of the chunk
+	 * @param cy - the y position of the chunk
+	 * @return <code>Vector2f[]</code> - an influence vector with length equal to 1 for each {@link #MASKS}
 	 */
-	private void genInfluenceVectors(long seed) {
-		int[] index = genInfluenceVectorIndecies();
+	private Vector2f[] genInfluenceVectors(long seed, int cx, int cy) {
+		int[] index = genInfluenceVectorIndecies(cx, cy);
 		
 		Vector2f[] vecs = new Vector2f[4];
 		for(int i=0; i<4; i++) {
@@ -201,16 +198,15 @@ public final class PerlinNoise {
 			vecs[i] = Vector2f.fromPolar(1, f);
 		}
 		
-		chunk.setInfluencevectors(vecs);
+		return vecs;
 	}
 	
 	/**
 	 * Converts the Cartesian location of each corner of the chunk into a location on a spiral.
 	 * @return <b><code>int[]</code></b> - an array containing the spiral index of each point of the {@link #MASKS}
 	 */
-	private int[] genInfluenceVectorIndecies() {
+	private int[] genInfluenceVectorIndecies(int x, int y) {
 		
-		int x = chunk.x, y=chunk.y;
 		int[] i = new int[MASKS];
 		i[TL] = Util.pointToSpiral(x  , y  );
 		i[TR] = Util.pointToSpiral(x+1, y  );
@@ -221,27 +217,7 @@ public final class PerlinNoise {
 		
 	}
 	
-	/**
-	 * Generates the distance vector of a pixel to its corner given by the mask
-	 * @param mask - one of the {@link #MASKS}
-	 * @param pixel - a {@link Vector2f} representing the pixels location within the chunk
-	 * @param pixelSize - equivalent to the {@link PerlinChunk#pixelSize}
-	 * @return {@link Vector2f} - the distance vector of the pixel to the corner
-	 */
-	static final Vector2f getPixelVectors(int mask, Vector2f pixel, int pixelSize){
-		switch (mask){
-			case TL:
-				return Vector2f.sub(new Vector2f(0,0),pixel);
-			case TR:
-				return Vector2f.sub(new Vector2f(pixelSize,0),pixel);
-			case BL:
-				return Vector2f.sub(new Vector2f(0,pixelSize),pixel);
-			case BR:
-				return Vector2f.sub(new Vector2f(pixelSize,pixelSize),pixel);
-			default:
-				return Vector2f.zero();
-		}
-	}
+	
 	
 	/**
 	 * The return value for the Perlin algorithm
@@ -264,16 +240,6 @@ public final class PerlinNoise {
 		}
 	};
 	
-	/**
-	 * Deletes the PerlinNoise instance after usage
-	 * <br>Does not delete the chunks
-	 */
-	public void delete() {
-		if (nextOctave!=null) {
-			for(PerlinNoise[] is : nextOctave) {for(PerlinNoise i:is) {
-				i.delete();
-			}}
-		}
-	}
+	
 	
 }

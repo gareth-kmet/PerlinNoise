@@ -7,20 +7,19 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Random;
 
 import perlin.PerlinNoise;
 import perlin.PerlinNoise.PerlinReturn;
 
 class Main {
-    static final int CHUNK_SIZE=8, PIXEL_SIZE=128, MULTI=1;
+    static final int CHUNK_SIZE=4, PIXEL_SIZE=256, MULTI=1;
     static PerlinReturn[][] pixs = new PerlinReturn[CHUNK_SIZE][CHUNK_SIZE];
     static Frame f;
+    static PerlinNoise p = new PerlinNoise(PIXEL_SIZE);
     static float max,min;
  
     static public void main(String[] args){
-    	
-    	perl();
+    	p.setOctaves(3, 4);
         
         f = new Frame( "paint Example" );
         f.add("Center", new MainCanvas());
@@ -36,26 +35,27 @@ class Main {
         
    }
     
-   private static void perl() {
-	   int seed = new Random().nextInt();
+   static void perl() {
+	   int seed = 6465161;//new Random().nextInt();
 	   max = Float.NEGATIVE_INFINITY;
 	   min = Float.POSITIVE_INFINITY;
+	   long time = System.currentTimeMillis();
 	   for(int x=0; x<CHUNK_SIZE; x++) {for(int y=0; y<CHUNK_SIZE; y++) {
-		   PerlinNoise p = new PerlinNoise(x,y, PIXEL_SIZE);
-		   p.setOctaves(4, 2, 0.5f);
-		   PerlinReturn pr = p.perlin(seed);
+		   PerlinReturn pr = p.perlin(seed, x, y);
 		   max = Math.max(pr.max(), max);
 		   min = Math.min(pr.min(), min);
 	       pixs[x][y] = pr;
 	   }}
-	   
+	   long t = System.currentTimeMillis()-time;
+	   System.out.println(t);
    }
 }
 class MainCanvas extends Canvas
 {
     @Override
 	public void paint(Graphics g)
-    {
+    {	
+    	Main.perl();
     	for(int cx=0; cx<Main.CHUNK_SIZE;cx++) {for(int cy=0;cy<Main.CHUNK_SIZE;cy++) {
     		for(int px=0; px<Main.PIXEL_SIZE; px++) {for(int py=0; py<Main.PIXEL_SIZE; py++) {
     			int x=Main.PIXEL_SIZE*cx+px;

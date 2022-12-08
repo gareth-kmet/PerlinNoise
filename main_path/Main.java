@@ -14,8 +14,9 @@ import perlin.PerlinNoise.PerlinReturn;
 
 class Main {
     static final int CHUNK_SIZE=5, PIXEL_SIZE=100, MULTI=2;
-    static PerlinReturn pixs;
+    static PerlinReturn[][] pixs = new PerlinReturn[CHUNK_SIZE][CHUNK_SIZE];
     static Frame f;
+    static float max,min;
  
     static public void main(String[] args){
     	
@@ -36,8 +37,17 @@ class Main {
    }
     
    private static void perl() {
-	   PerlinNoise p = new PerlinNoise(new Random().nextInt(), CHUNK_SIZE, PIXEL_SIZE, false);
-       pixs = p.perlin();
+	   int seed = new Random().nextInt();
+	   max = Float.NEGATIVE_INFINITY;
+	   min = Float.POSITIVE_INFINITY;
+	   for(int x=0; x<CHUNK_SIZE; x++) {for(int y=0; y<CHUNK_SIZE; y++) {
+		   PerlinNoise p = new PerlinNoise(x,y, PIXEL_SIZE);
+		   PerlinReturn pr = p.perlin(seed);
+		   max = Math.max(pr.max(), max);
+		   min = Math.min(pr.min(), min);
+	       pixs[x][y] = pr;
+	   }}
+	   
    }
 }
 class MainCanvas extends Canvas
@@ -50,8 +60,7 @@ class MainCanvas extends Canvas
     			int x=Main.PIXEL_SIZE*cx+px;
     			int y=Main.PIXEL_SIZE*cy+py;
     			
-    			float f = Main.pixs.values()[cx][cy][px][py]; 
-    			f = (f-Main.pixs.min())/(Main.pixs.max()-Main.pixs.min());
+    			float f = Main.pixs[cx][cy].getNormalizedValue(px,py, Main.max, Main.min);
    
     			
     			//g.setColor(new Color((float)x/(Main.PIXEL_SIZE*Main.CHUNK_SIZE), (float)y/(Main.PIXEL_SIZE*Main.CHUNK_SIZE),1));

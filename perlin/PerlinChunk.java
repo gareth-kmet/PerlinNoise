@@ -5,35 +5,22 @@ import util.Vector2f;
 class PerlinChunk {
 	
 	final int x,y;
-	
-	static class InfluenceVectors{
-		final Vector2f 
-			TL, TR,
-			BL, BR;
-		
-		final Vector2f[] vecs = new Vector2f[PerlinNoise.MASKS];
-		
-		InfluenceVectors(Vector2f tl, Vector2f tr, Vector2f bl, Vector2f br) {
-			TL= tl;vecs[PerlinNoise.TL]=TL;
-			TR= tr;vecs[PerlinNoise.TR]=TR;
-			BL= bl;vecs[PerlinNoise.BL]=BL;
-			BR= br;vecs[PerlinNoise.BR]=BR;
-		}
-	}
-	
-	final InfluenceVectors invecs;
+	Vector2f[] invecs;
 	
 	final PerlinPixel[][] pixels;
 	
 	final int pixelSize;
 
 	
-	PerlinChunk(int x, int y, InfluenceVectors vecs, int pixelSize){
+	PerlinChunk(int x, int y, int pixelSize){
 		this.x=x; this.y=y;
-		invecs = vecs;
 		
 		this.pixelSize = pixelSize;
 		this.pixels = PerlinChunk.initPixels(pixelSize);
+	}
+	
+	void setInfluencevectors(Vector2f[] invecs) {
+		this.invecs=invecs;
 	}
 	
 	private static PerlinPixel[][] initPixels(final int pixelSize) {
@@ -46,6 +33,15 @@ class PerlinChunk {
 		}
 		
 		return pixels;
+	}
+	
+	static Vector2f[] genInfluenceVectorsArray(Vector2f tl, Vector2f tr, Vector2f bl, Vector2f br) {
+		Vector2f[] vecs = new Vector2f[PerlinNoise.MASKS];
+		vecs[PerlinNoise.TL]=tl;
+		vecs[PerlinNoise.TR]=tr;
+		vecs[PerlinNoise.BL]=bl;
+		vecs[PerlinNoise.BR]=br;
+		return vecs;
 	}
 	
 	

@@ -4,10 +4,8 @@ import util.Vector2f;
 
 class Perlinification {
 	
-	boolean perlined = false;
 	
-	Perlinification(){
-	}
+	boolean perlined = false;
 	
 	static final class Masks{
 		final float[][]
@@ -16,17 +14,17 @@ class Perlinification {
 		
 		final float[][][] m = new float[4][][];
 		
-		private Masks(PerlinChunk chunk){
-			TL = new float[chunk.pixelSize][chunk.pixelSize]; m[PerlinNoise.TL]=TL;
-			BL = new float[chunk.pixelSize][chunk.pixelSize]; m[PerlinNoise.BL]=BL;
-			TR = new float[chunk.pixelSize][chunk.pixelSize]; m[PerlinNoise.TR]=TR;
-			BR = new float[chunk.pixelSize][chunk.pixelSize]; m[PerlinNoise.BR]=BR;
+		private Masks(int size){
+			TL = new float[size][size]; m[PerlinNoise.TL]=TL;
+			BL = new float[size][size]; m[PerlinNoise.BL]=BL;
+			TR = new float[size][size]; m[PerlinNoise.TR]=TR;
+			BR = new float[size][size]; m[PerlinNoise.BR]=BR;
 		}
 		
 	}
 	
 	static float[][] perlinAChunk(PerlinChunk chunk) {
-		Masks chunkMask = new Masks(chunk);
+		Masks chunkMask = new Masks(chunk.pixelSize);
 		for(int i=0; i<PerlinNoise.MASKS; i++) {
 			perlinAMask(i, chunkMask, chunk);
 		}
@@ -63,7 +61,7 @@ class Perlinification {
 		for(int x=0; x<chunk.pixelSize; x++) {
 			for(int y=0; y<chunk.pixelSize; y++) {
 				PerlinPixel p = chunk.pixels[x][y];
-				masks.m[mask][x][y] = Vector2f.dot(p.covecs.vecs[mask], chunk.invecs.vecs[mask]);
+				masks.m[mask][x][y] = Vector2f.dot(p.vecs[mask], chunk.invecs[mask]);
 			}
 		}
 	}

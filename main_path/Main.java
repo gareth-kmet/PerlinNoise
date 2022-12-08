@@ -13,7 +13,7 @@ import perlin.PerlinNoise;
 import perlin.PerlinNoise.PerlinReturn;
 
 class Main {
-    static final int CHUNK_SIZE=5, PIXEL_SIZE=100, MULTI=2;
+    static final int CHUNK_SIZE=8, PIXEL_SIZE=128, MULTI=1;
     static PerlinReturn[][] pixs = new PerlinReturn[CHUNK_SIZE][CHUNK_SIZE];
     static Frame f;
     static float max,min;
@@ -42,6 +42,7 @@ class Main {
 	   min = Float.POSITIVE_INFINITY;
 	   for(int x=0; x<CHUNK_SIZE; x++) {for(int y=0; y<CHUNK_SIZE; y++) {
 		   PerlinNoise p = new PerlinNoise(x,y, PIXEL_SIZE);
+		   p.setOctaves(4, 2, 0.5f);
 		   PerlinReturn pr = p.perlin(seed);
 		   max = Math.max(pr.max(), max);
 		   min = Math.min(pr.min(), min);

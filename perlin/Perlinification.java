@@ -31,9 +31,32 @@ class Perlinification {
 			perlinAMask(i, chunkMask, chunk);
 		}
 		
-		return chunkMask.m[1];
+		float[][] mT = lerpMs(chunkMask.TL, chunkMask.TR, chunk.pixelSize, true);
+		float[][] mB = lerpMs(chunkMask.BL, chunkMask.BR, chunk.pixelSize, true);
+		float[][] mask = lerpMs(mT, mB, chunk.pixelSize, false);
 		
+		return mask;
 		
+	}
+	
+	private static float[][] lerpMs(float[][] m1, float[][] m2, int size, boolean lr){
+		float psize = 1f/size;
+		
+		float[][] mask = new float[size][size];
+		
+		for(int x=0;x<size;x++) {
+			for(int y=0;y<size;y++) {
+				float aProp = (lr?x:y)*psize;
+				mask[x][y] = lerp(m1[x][y],m2[x][y], aProp);
+			}
+		}
+		
+		return mask;
+	}
+	
+	private static float lerp(float val1, float val2, float aProp) {
+		float a = (float)(6*Math.pow(aProp, 5)-15*Math.pow(aProp, 4)+10*Math.pow(aProp, 3));
+		return val1+a*(val2-val1);
 	}
 	
 	private static void perlinAMask(int mask, Masks masks, PerlinChunk chunk) {

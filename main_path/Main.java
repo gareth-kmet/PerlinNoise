@@ -7,22 +7,23 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Random;
 
 import perlin.PerlinNoise;
 import perlin.PerlinNoise.PerlinReturn;
 
 class Main {
-    static final int CHUNK_SIZE=5, PIXEL_SIZE=10;
+    static final int CHUNK_SIZE=5, PIXEL_SIZE=100, MULTI=2;
     static PerlinReturn pixs;
+    static Frame f;
  
     static public void main(String[] args){
     	
-    	PerlinNoise p = new PerlinNoise(12314, CHUNK_SIZE, PIXEL_SIZE, false);
-        pixs = p.perlin();
+    	perl();
         
-        Frame f = new Frame( "paint Example" );
+        f = new Frame( "paint Example" );
         f.add("Center", new MainCanvas());
-        f.setSize(new Dimension(CHUNK_SIZE*PIXEL_SIZE*10+22,CHUNK_SIZE*PIXEL_SIZE*10+22));
+        f.setSize(new Dimension(CHUNK_SIZE*PIXEL_SIZE*Main.MULTI,CHUNK_SIZE*PIXEL_SIZE*Main.MULTI+40));
         f.setVisible(true);
         
         f.addWindowListener (new WindowAdapter() {    
@@ -32,7 +33,11 @@ class Main {
             }    
         }); 
         
-        
+   }
+    
+   private static void perl() {
+	   PerlinNoise p = new PerlinNoise(new Random().nextInt(), CHUNK_SIZE, PIXEL_SIZE, false);
+       pixs = p.perlin();
    }
 }
 class MainCanvas extends Canvas
@@ -51,7 +56,7 @@ class MainCanvas extends Canvas
     			
     			//g.setColor(new Color((float)x/(Main.PIXEL_SIZE*Main.CHUNK_SIZE), (float)y/(Main.PIXEL_SIZE*Main.CHUNK_SIZE),1));
     			g.setColor(new Color(f,f,f));
-    			g.fillRect(x*10, y*10, 1*10, 1*10);
+    			g.fillRect(x*Main.MULTI, y*Main.MULTI, 1*Main.MULTI, 1*Main.MULTI);
     		}}
     	}}
     }

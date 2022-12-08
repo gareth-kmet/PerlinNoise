@@ -6,6 +6,7 @@ import util.Vector2f;
 
 /**
  * Built for static generation
+ * <br>Adapted from <a href="https://www.youtube.com/watch?v=ZsEnnB2wrbI"> this video</a>
  * @author Gareth Kmet
  *
  */

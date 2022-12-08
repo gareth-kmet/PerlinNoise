@@ -1,5 +1,6 @@
 package perlin;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import util.Util;
@@ -55,6 +56,12 @@ public final class PerlinNoise{
 	 * @param lacunarity - the number of subdivisions of chunks per octave
 	 */
 	public void setOctaves(int octaves, int lacunarity) {
+		if(octaves==this.octaves && lacunarity==this.lacunarity) {
+			return;
+		}else if(lacunarity==this.lacunarity || octaves == 1) {
+			setOctaves(octaves, lacunarity);
+			return; 
+		}
 		octaveDataSets = new PerlinOctave[octaves];
 		
 		this.octaves = octaves;
@@ -73,8 +80,25 @@ public final class PerlinNoise{
 	 * @param octaves - the number of octaves to go through
 	 */
 	public void setOctaves(int octaves) {
-		setOctaves(octaves, lacunarity);
-		//TODO optimize;
+		if(octaves==this.octaves) {
+			return;
+		}else if(octaves<this.octaves) {
+			PerlinOctave[] n = new PerlinOctave[octaves];
+			for(int i=0;i<octaves;i++) {
+				n[i]=octaveDataSets[i];
+			}
+			octaveDataSets=n;
+		}else {
+			PerlinOctave[] n=Arrays.copyOf(octaveDataSets, octaves);
+			int psize = octaveDataSets[octaveDataSets.length-1].psize();
+			for(int i=this.octaves; i<octaves;i++) {
+				psize/=lacunarity;
+				n[i] = new PerlinOctave(i, psize);
+			}
+			octaveDataSets=n;
+		}
+		
+		this.octaves=octaves;
 	}
 	
 	/**

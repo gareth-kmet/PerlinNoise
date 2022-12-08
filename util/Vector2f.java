@@ -75,6 +75,28 @@ public final class Vector2f{
 	}
 	
 	/**
+	 * Subtracts two {@link Vector2f}
+	 * <br>Does not change the contents of <b>a</b> and <b>b</b>
+	 * @param a {@link Vector2f}
+	 * @param b {@link Vector2f}
+	 * @return a new {@link Vector2f} containing the sum
+	 */
+	public static Vector2f sub(Vector2f a, Vector2f b) {
+		return new Vector2f(a.x-b.x, a.y-b.y);
+	}
+	
+	/**
+	 * Subtracts the components of a {@link Vector2f} to the components of this instance
+	 * <br>Does not modify the contents of <b>b</b>
+	 * @param b
+	 * @return this instance
+	 */
+	public Vector2f sub(Vector2f b) {
+		this.x-=b.x; this.y-=b.y;
+		return this;
+	}
+	
+	/**
 	 * Scales a {@link Vector2f} by a float
 	 * <br>Does not change the contents of <b>a</b>
 	 * @param a {@link Vector2f}
@@ -117,6 +139,16 @@ public final class Vector2f{
 	@Override
 	public String toString() {
 		return "Vector2f ["+x+", "+y+"]";
+	}
+	
+	/**
+	 * Creates a {@link Vector2f} using polar coordinates
+	 * @param r {@link float}
+	 * @param theta {@link float}
+	 * @return new {@link Vector2f}
+	 */
+	public static Vector2f fromPolar(float r, float theta) {
+		return new Vector2f((float)(r*Math.cos(theta)), (float)(r*Math.sin(theta)));
 	}
 
 }

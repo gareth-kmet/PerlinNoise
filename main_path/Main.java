@@ -10,17 +10,21 @@ import java.awt.event.WindowEvent;
 
 import perlin.PerlinNoise;
 import perlin.PerlinNoise.PerlinReturn;
+import util.Vectornf;
 
 class Main {
     static final int CHUNK_SIZE=4, PIXEL_SIZE=256, MULTI=1;
     static PerlinReturn[][] pixs = new PerlinReturn[CHUNK_SIZE][CHUNK_SIZE];
     static Frame f;
-    static PerlinNoise p = new PerlinNoise(PIXEL_SIZE);
+    static Vectornf[] ps = {Vectornf.color(Color.red), Vectornf.color(Color.green), Vectornf.color(Color.blue)};
+    static PerlinNoise p = new PerlinNoise(PIXEL_SIZE, ps);
     static float max,min;
+    
+    static int octaves = 3;
  
     static public void main(String[] args){
-    	p.setOctaves(3, 4);
-        
+    	p.setOctaves(3, 2);
+    	Main.perl();
         f = new Frame( "paint Example" );
         f.add("Center", new MainCanvas());
         f.setSize(new Dimension(CHUNK_SIZE*PIXEL_SIZE*Main.MULTI,CHUNK_SIZE*PIXEL_SIZE*Main.MULTI+40));
@@ -55,17 +59,16 @@ class MainCanvas extends Canvas
     @Override
 	public void paint(Graphics g)
     {	
-    	Main.perl();
     	for(int cx=0; cx<Main.CHUNK_SIZE;cx++) {for(int cy=0;cy<Main.CHUNK_SIZE;cy++) {
     		for(int px=0; px<Main.PIXEL_SIZE; px++) {for(int py=0; py<Main.PIXEL_SIZE; py++) {
     			int x=Main.PIXEL_SIZE*cx+px;
     			int y=Main.PIXEL_SIZE*cy+py;
     			
-    			float f = Main.pixs[cx][cy].getNormalizedValue(px,py, Main.max, Main.min);
+    			Color f = Main.pixs[cx][cy].getNormalizedValue(px,py, Main.max, Main.min).toColor();
    
     			
     			//g.setColor(new Color((float)x/(Main.PIXEL_SIZE*Main.CHUNK_SIZE), (float)y/(Main.PIXEL_SIZE*Main.CHUNK_SIZE),1));
-    			g.setColor(new Color(f,f,f));
+    			g.setColor(f);
     			g.fillRect(x*Main.MULTI, y*Main.MULTI, 1*Main.MULTI, 1*Main.MULTI);
     		}}
     	}}

@@ -1,6 +1,8 @@
 package perlin;
 
 import util.Vector2f;
+import util.Vector2v;
+import util.Vectornf;
 
 /**
  * Class of static methods to be used by the {@link PerlinNoise} algorithm
@@ -19,21 +21,21 @@ final class Perlinification {
 	 *
 	 */
 	static final class Masks{
-		final float[][]
+		final Vectornf[][]
 				TL, TR,
 				BL, BR;
 		
-		final float[][][] m = new float[PerlinNoise.MASKS][][];
+		final Vectornf[][][] m = new Vectornf[PerlinNoise.MASKS][][];
 		
 		/**
 		 * Generates empty masks
 		 * @param size - {@link PerlinChunk#pixelSize}
 		 */
 		private Masks(int size){
-			TL = new float[size][size]; m[PerlinNoise.TL]=TL;
-			BL = new float[size][size]; m[PerlinNoise.BL]=BL;
-			TR = new float[size][size]; m[PerlinNoise.TR]=TR;
-			BR = new float[size][size]; m[PerlinNoise.BR]=BR;
+			TL = new Vectornf[size][size]; m[PerlinNoise.TL]=TL;
+			BL = new Vectornf[size][size]; m[PerlinNoise.BL]=BL;
+			TR = new Vectornf[size][size]; m[PerlinNoise.TR]=TR;
+			BR = new Vectornf[size][size]; m[PerlinNoise.BR]=BR;
 		}
 		
 	}
@@ -46,15 +48,15 @@ final class Perlinification {
 	 * @param chunk - {@link PerlinChunk}
 	 * @return <b><code>float[][]</code></b> - the float array of the final pixel values
 	 */
-	static float[][] perlinAChunk(Vector2f[] invecs, PerlinOctave oct) {
+	static Vectornf[][] perlinAChunk(Vector2v[] invecs, PerlinOctave oct) {
 		Masks chunkMask = new Masks(oct.psize());
 		for(int i=0; i<PerlinNoise.MASKS; i++) {
 			perlinAMask(i, chunkMask, oct, invecs);
 		}
 		
-		float[][] mT = lerpMs(chunkMask.TL, chunkMask.TR, oct.psize(), true);
-		float[][] mB = lerpMs(chunkMask.BL, chunkMask.BR, oct.psize(), true);
-		float[][] mask = lerpMs(mT, mB, oct.psize(), false);
+		Vectornf[][] mT = lerpMs(chunkMask.TL, chunkMask.TR, oct.psize(), true);
+		Vectornf[][] mB = lerpMs(chunkMask.BL, chunkMask.BR, oct.psize(), true);
+		Vectornf[][] mask = lerpMs(mT, mB, oct.psize(), false);
 		
 		return mask;
 		
@@ -68,10 +70,10 @@ final class Perlinification {
 	 * @param lr - the directionality of the lerp (<code>true</code> for horizontal and <code>false</code> for vertical)
 	 * @return <code><b>float[][]</code></b> - the resulting mask
 	 */
-	private static float[][] lerpMs(float[][] m1, float[][] m2, int size, boolean lr){
+	private static Vectornf[][] lerpMs(Vectornf[][] m1, Vectornf[][] m2, int size, boolean lr){
 		float psize = 1f/size;
 		
-		float[][] mask = new float[size][size];
+		Vectornf[][] mask = new Vectornf[size][size];
 		
 		for(int x=0;x<size;x++) {
 			for(int y=0;y<size;y++) {
@@ -91,9 +93,9 @@ final class Perlinification {
 	 * @param aProp - the linear proportion of the location between the two values
 	 * @return <b><code>float</code></b> - the resulting value
 	 */
-	private static float lerp(float val1, float val2, float aProp) {
+	private static Vectornf lerp(Vectornf val1, Vectornf val2, float aProp) {
 		float a = (float)(6*Math.pow(aProp, 5)-15*Math.pow(aProp, 4)+10*Math.pow(aProp, 3));
-		return val1+a*(val2-val1);
+		return Vectornf.add(val1, Vectornf.scale(Vectornf.sub(val2, val1), a));
 	}
 	
 	/**
@@ -102,11 +104,11 @@ final class Perlinification {
 	 * @param masks - the chunk's pixel masks
 	 * @param chunk - the chunk
 	 */
-	private static void perlinAMask(int mask, Masks masks, PerlinOctave oct, Vector2f[] invecs) {
+	private static void perlinAMask(int mask, Masks masks, PerlinOctave oct, Vector2v[] invecs) {
 		for(int x=0; x<oct.psize(); x++) {
 			for(int y=0; y<oct.psize(); y++) {
 				Vector2f pixelMaskVector = oct.pixelDistanceVectors()[mask][x][y];
-				masks.m[mask][x][y] = Vector2f.dot(pixelMaskVector, invecs[mask]);
+				masks.m[mask][x][y] = Vector2v.dot(invecs[mask], pixelMaskVector);
 			}
 		}
 	}

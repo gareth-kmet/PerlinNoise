@@ -5,6 +5,8 @@ import java.util.Random;
 
 import util.Util;
 import util.Vector2f;
+import util.Vector2v;
+import util.Vectornf;
 
 /**
  * Perlin Noise algorithm built for infinite chunk generation
@@ -35,6 +37,8 @@ public final class PerlinNoise{
 	private int lacunarity = 1;
 	private float persistence = 0.5f;
 	
+	private final Vectornf[] possibilities;
+	
 	private final int psize;
 	
 	private PerlinOctave[] octaveDataSets = {};
@@ -43,9 +47,10 @@ public final class PerlinNoise{
 	 * Generates a new PerlinNoise algorithm instance with a set square pixel size
 	 * @param psize - the amount of pixels that the chunk is wide and tall
 	 */
-	public PerlinNoise(int psize) {
+	public PerlinNoise(int psize, Vectornf[] possibilities) {
 		this.psize=psize;
 		random = new Random();
+		this.possibilities=possibilities;
 		setOctaves(1,1);
 	}
 	
@@ -139,29 +144,33 @@ public final class PerlinNoise{
 	public PerlinReturn perlin(long seed, int cx, int cy){
 		PerlinOctave oct = octaveDataSets[0];
 		
-		float[][] values = new float[oct.psize()][oct.psize()];
+		Vectornf[][] values = new Vectornf[oct.psize()][oct.psize()];
 		
 		int ocx = cx;
 		int ocy = cy;
 		
-		Vector2f[] invecs = genInfluenceVectors(seed, ocx, ocy);
-		float[][] pixs = Perlinification.perlinAChunk(invecs, oct);
+		Vector2v[] invecs = genInfluenceVectors(seed, ocx, ocy);
+		Vectornf[][] pixs = Perlinification.perlinAChunk(invecs, oct);
 		
-		float[][] subOctPixs;
+		Vectornf[][] subOctPixs = null;
 		if(octaves>1) {
 			subOctPixs = perlinOctave(seed+1, ocx, ocy, 1);
-		}else {
-			subOctPixs = new float[oct.psize()][oct.psize()];
 		}
 			
 		
 		float max = Float.NEGATIVE_INFINITY, min=Float.POSITIVE_INFINITY;
 		
 		for(int x=0;x<oct.psize();x++) {for(int y=0;y<oct.psize();y++) {
-			float p = pixs[x][y] + subOctPixs[x][y] * persistence;
+			Vectornf p = pixs[x][y];
+			if(subOctPixs != null) {
+				p = Vectornf.add(p, Vectornf.scale(subOctPixs[x][y], persistence));
+			}
 			values[x][y]=p;
-			max = Math.max(max, p);
-			min = Math.min(min, p);
+			for(int i=0; i<p.size(); i++) {
+				max = Math.max(max, p.get(i));
+				min = Math.min(min, p.get(i));
+			}
+			
 		}}
 		
 		return new PerlinReturn(values,max,min);
@@ -176,29 +185,30 @@ public final class PerlinNoise{
 	 * @param octn - the number of the current octave
 	 * @return <code>float[][]</code> - array with total values of all pixels in the octave. Size of the square array is equal to <code>oct(n-1).psize()</code>
 	 */
-	private float[][] perlinOctave(long seed, int cx, int cy, int octn) {
+	private Vectornf[][] perlinOctave(long seed, int cx, int cy, int octn) {
 		
 		PerlinOctave oct = octaveDataSets[octn];
 		
-		float[][] values = new float[oct.psize()*lacunarity][oct.psize()*lacunarity];
+		Vectornf[][] values = new Vectornf[oct.psize()*lacunarity][oct.psize()*lacunarity];
 		
 		for(int i=0; i<lacunarity; i++) {for(int j=0; j<lacunarity; j++) {
 			int ocx = cx*lacunarity+i;
 			int ocy = cy*lacunarity+j;
 			
-			Vector2f[] invecs = genInfluenceVectors(seed, ocx, ocy);
-			float[][] pixs = Perlinification.perlinAChunk(invecs, oct);
+			Vector2v[] invecs = genInfluenceVectors(seed, ocx, ocy);
+			Vectornf[][] pixs = Perlinification.perlinAChunk(invecs, oct);
 			
-			float[][] subOctPixs;
+			Vectornf[][] subOctPixs = null;
 			if(octn<octaves-1) {
 				subOctPixs = perlinOctave(seed+1, ocx, ocy, octn+1);
-			}else {
-				subOctPixs = new float[oct.psize()][oct.psize()];
 			}
 			
 			
 			for(int x=0;x<oct.psize();x++) {for(int y=0;y<oct.psize();y++) {
-				float p = pixs[x][y] + subOctPixs[x][y] * persistence;
+				Vectornf p = pixs[x][y];
+				if(subOctPixs != null) {
+					p = Vectornf.add(p, Vectornf.scale(subOctPixs[x][y], persistence));
+				}
 				values[i*oct.psize()+x][j*oct.psize()+y]=p;
 			}}
 		}}
@@ -213,13 +223,18 @@ public final class PerlinNoise{
 	 * @param cy - the y position of the chunk
 	 * @return <code>Vector2f[]</code> - an influence vector with length equal to 1 for each {@link #MASKS}
 	 */
-	private Vector2f[] genInfluenceVectors(long seed, int cx, int cy) {
+	private Vector2v[] genInfluenceVectors(long seed, int cx, int cy) {
 		int[] index = genInfluenceVectorIndecies(cx, cy);
 		
-		Vector2f[] vecs = new Vector2f[4];
+		Vector2v[] vecs = new Vector2v[MASKS];
 		for(int i=0; i<4; i++) {
 			float f = Util.getRandomFloatAtIndex(index[i], random, seed, 2*(float)Math.PI);
-			vecs[i] = Vector2f.fromPolar(1, f);
+			int in = Util.getRandomIntAtIndex(index[i], random, seed, possibilities.length);
+			Vector2f p = Vector2f.fromPolar(1, f);
+			vecs[i] = new Vector2v(
+						Vectornf.scale(possibilities[in], p.x),
+						Vectornf.scale(possibilities[in], p.y)
+					);
 		}
 		
 		return vecs;
@@ -255,12 +270,12 @@ public final class PerlinNoise{
 	 * </ul>
 	 *
 	 */
-	public record PerlinReturn(float[][] values, float max, float min) {
-		public float getNormalizedValue(int px, int py) {
+	public record PerlinReturn(Vectornf[][] values, float max, float min) {
+		public Vectornf getNormalizedValue(int px, int py) {
 			return getNormalizedValue(px,py,max,min);
 		}
-		public float getNormalizedValue(int px, int py, float max, float min) {
-			return (values[px][py]-min)/(max-min);
+		public Vectornf getNormalizedValue(int px, int py, float max, float min) {
+			return Vectornf.scale(Vectornf.sub(values[px][py], Vectornf.Const(values[px][py].size(),min)),1f/(max-min));
 		}
 	};
 	

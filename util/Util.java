@@ -29,6 +29,26 @@ public final class Util {
 	}
 	
 	/**
+	 * Gets the i-th random int of a given seed 
+	 * <br>Will reset the seed of the random generator beforehand but not after
+	 * @param index - the index to retrieve the int
+	 * @param random - the random generator to use
+	 * @param seed - the seed to use for the random generator
+	 * @param bound - the bound of the random int
+	 * @return <b><code>float</code></b> - the i-th random float
+	 */
+	public static int getRandomIntAtIndex(int index, Random random, long seed, int bound) {
+		random.setSeed(seed);
+		for(int i=0; i<=index; i++) {
+			int f = random.nextInt(bound);
+			if(i==index) {
+				return f;
+			}
+		}
+		return -1; // DEAD CODE, only here to avoid syntax errors
+	}
+	
+	/**
 	 * Converts a Cartesian location into an index on a spiral. Each different location will result in a different index
 	 * <br>Taken from <a href="https://stackoverflow.com/questions/9970134/get-spiral-index-from-location">here</a>
 	 * @param x - The x location

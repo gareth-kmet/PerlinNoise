@@ -2,6 +2,11 @@ package util;
 
 import java.util.Random;
 
+/**
+ * 
+ * @author Gareth Kmet
+ *
+ */
 public final class Util {
 	/**
 	 * No initializing

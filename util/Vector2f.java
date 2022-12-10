@@ -6,7 +6,7 @@ package util;
  * @author Gareth Kmet
  *
  */
-public final class Vector2f{
+public final class Vector2f extends Vectornf{
 	
 	public float x,y;
 	
@@ -16,6 +16,7 @@ public final class Vector2f{
 	 * @param y
 	 */
 	public Vector2f(float x, float y) {
+		super(x,y);
 		this.x=x; this.y=y;
 	}
 	/**
@@ -25,6 +26,7 @@ public final class Vector2f{
 	 * @param c
 	 */
 	public Vector2f(float c) {
+		super(c,c);
 		this.x=c; this.y=c;
 	}
 	
@@ -69,8 +71,10 @@ public final class Vector2f{
 	 * @param b
 	 * @return this instance
 	 */
-	public Vector2f add(Vector2f b) {
-		this.x+=b.x; this.y+=b.y;
+	@Override
+	public Vector2f add(Vectornf b) {
+		assertCompatable(this, b);
+		this.x+=b.get(0); this.y+=b.get(1);
 		return this;
 	}
 	
@@ -91,8 +95,10 @@ public final class Vector2f{
 	 * @param b
 	 * @return this instance
 	 */
-	public Vector2f sub(Vector2f b) {
-		this.x-=b.x; this.y-=b.y;
+	@Override
+	public Vector2f sub(Vectornf b) {
+		assertCompatable(this, b);
+		this.x-=b.get(0); this.y-=b.get(1);
 		return this;
 	}
 	
@@ -112,6 +118,7 @@ public final class Vector2f{
 	 * @param b {@link float}
 	 * @return this instance
 	 */
+	@Override
 	public Vector2f scale(float b) {
 		this.x*=b; this.y*=b;
 		return this;
@@ -132,8 +139,10 @@ public final class Vector2f{
 	 * @param b {@link Vecto2f}
 	 * @return {@link float} representing the dot product
 	 */
-	public float dot(Vector2f b) {
-		return Vector2f.dot(this, b);
+	@Override
+	public float dot(Vectornf b) {
+		assertCompatable(this, b);
+		return x*b.get(0)+y*b.get(1);
 	}
 	
 	@Override

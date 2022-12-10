@@ -9,7 +9,7 @@ import util.Vectornf;
  * @author Gareth Kmet
  *
  */
-final class Perlinification {
+public final class Perlinification {
 	/**
 	 * No initializing
 	 */
@@ -46,7 +46,7 @@ final class Perlinification {
 	 * <p>This algorithm first dot-products the individual pixels' distance vector and influence vector for each {@link PerlinNoise#MASKS}. 
 	 * Then it horizontally lerps the top and bottom masks respectively and then vertically lerps those two new masks together
 	 * @param chunk - {@link PerlinChunk}
-	 * @return <b><code>float[][]</code></b> - the float array of the final pixel values
+	 * @return <b><code>Vectornf[][]</code></b> - the float array of the final pixel values
 	 */
 	static Vectornf[][] perlinAChunk(Vector2v[] invecs, PerlinOctave oct) {
 		Masks chunkMask = new Masks(oct.psize());
@@ -63,12 +63,12 @@ final class Perlinification {
 	}
 	
 	/**
-	 * Lerps two <code>float[][]</code> masks together
+	 * Lerps two <code>Vectornf[][]</code> masks together
 	 * @param m1 - the first mask
 	 * @param m2 - the second mask
 	 * @param size - the width of the mask, {@link PerlinChunk#pixelSize}
 	 * @param lr - the directionality of the lerp (<code>true</code> for horizontal and <code>false</code> for vertical)
-	 * @return <code><b>float[][]</code></b> - the resulting mask
+	 * @return <code><b>Vectornf[][]</code></b> - the resulting mask
 	 */
 	private static Vectornf[][] lerpMs(Vectornf[][] m1, Vectornf[][] m2, int size, boolean lr){
 		float psize = 1f/size;
@@ -91,7 +91,7 @@ final class Perlinification {
 	 * @param val1 - the first value
 	 * @param val2 - the second value
 	 * @param aProp - the linear proportion of the location between the two values
-	 * @return <b><code>float</code></b> - the resulting value
+	 * @return <b><code>Vectornf</code></b> - the resulting value
 	 */
 	private static Vectornf lerp(Vectornf val1, Vectornf val2, float aProp) {
 		float a = (float)(6*Math.pow(aProp, 5)-15*Math.pow(aProp, 4)+10*Math.pow(aProp, 3));
@@ -111,5 +111,44 @@ final class Perlinification {
 				masks.m[mask][x][y] = Vector2v.dot(invecs[mask], pixelMaskVector);
 			}
 		}
+	}
+	
+	/**
+	 * Override interface for the choice of {@link PerlinNoise#possibilities} when generating an influence vector on the first octave
+	 * <p> If one of the methods returns <code>-1</code>, then the default method will used
+	 * @author Gareth Kmet
+	 *
+	 */
+	public interface PerlinGenMainInfluenceVectorPosibilityIndex{
+		/**
+		 * 
+		 * @param seed - the random seed that the algorithm is running on
+		 * @param mask - the corner of the influence vector
+		 * @param spiralIndex - the calculated unique index of the chunk
+		 * @param cx - the chunk x position
+		 * @param cy - the chunk y position
+		 * @return the index of the possibility influence vector
+		 */
+		public int perlinGenMainInfluenceVectorPosibilityIndex(
+				long seed, int mask, int spiralIndex, int cx, int cy);
+	}
+	
+	/**
+	 * Override interface for the choice of {@link PerlinNoise#possibilities} when generating an influence vector on the subsequent octave
+	 * @author Gareth Kmet
+	 *
+	 */
+	public interface PerlinGenOctInfluenceVectorPosibilityIndex{
+		/**
+		 * 
+		 * @param seed - the random seed that the algorithm is running on
+		 * @param mask - the corner of the influence vector
+		 * @param spiralIndex - the calculated unique index of the chunk
+		 * @param cx - the chunk x position
+		 * @param cy - the chunk y position
+		 * @return the index of the possibility influence vector
+		 */
+		public int perlinGenOctInfluenceVectorPosibilityIndex(
+				long seed, int mask, int spiralIndex, int cx, int cy);
 	}
 }

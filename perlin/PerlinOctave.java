@@ -25,11 +25,11 @@ record PerlinOctave(int n, int psize, Vector2f[][][] pixelDistanceVectors) {
 	 */
 	void calcDistanceVectors() {
 		for(int x=0; x<psize;x++) {for(int y=0;y<psize;y++) {
-			Vector2f pixel = new Vector2f(x+0.5f, y+0.5f);
+			Vector2f pixel = new Vector2f((x)/(float)psize, (y)/(float)psize);
 			pixelDistanceVectors[PerlinNoise.TL][x][y] = Vector2f.sub(new Vector2f(0,0),pixel);
-			pixelDistanceVectors[PerlinNoise.TR][x][y] = Vector2f.sub(new Vector2f(psize,0),pixel);
-			pixelDistanceVectors[PerlinNoise.BL][x][y] = Vector2f.sub(new Vector2f(0,psize),pixel);
-			pixelDistanceVectors[PerlinNoise.BR][x][y] = Vector2f.sub(new Vector2f(psize,psize),pixel);
+			pixelDistanceVectors[PerlinNoise.TR][x][y] = Vector2f.sub(new Vector2f(1,0),pixel);
+			pixelDistanceVectors[PerlinNoise.BL][x][y] = Vector2f.sub(new Vector2f(0,1),pixel);
+			pixelDistanceVectors[PerlinNoise.BR][x][y] = Vector2f.sub(new Vector2f(1,1),pixel);
 		}}
 	}
 }

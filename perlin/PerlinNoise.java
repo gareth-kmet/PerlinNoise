@@ -2,9 +2,9 @@ package perlin;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.Predicate;
 
-import perlin.Perlinification.PerlinGenMainInfluenceVectorPosibilityIndex;
-import perlin.Perlinification.PerlinGenOctInfluenceVectorPosibilityIndex;
+import perlin.Perlinification.PerlinInfluenceGenerator;
 import util.Util;
 import util.Vector2f;
 import util.Vector2v;
@@ -17,13 +17,29 @@ import util.Vectornf;
  * 
  * <p>This algorithm will take in a size of influence vector, <code>s</code>, and a chunk size, <code>cs</code>.
  * It will then run perlin noise on a given chunk location with each corner given an influence vector equal to <code>(ax,bx)</code>
- * where <code>a,b</code> are two normalized floats and <code>x</code> is a random standard vector of dimension <code>s</code>.
+ * where <code>a,b</code> are two normalized floats and <code>x</code> is a random possible influence vector of dimension <code>s</code>.
  * <br>This will then return pixel array of square size <code>cs</code> which contains a vector of size <code>s</code> for each pixel.
  * <br><i>Note that the value-vectors are not normalized but can be using the given methods in the returned record</i>
+ * 
+ * <p>This algorithm can guarantee that (if the possibility set is linearly independent) an linear independent vector which is missing for the possibility set will not be present in the results
+ * <br>Although, this is not true if the normalization method is used from the results
+ * 
+ * <p>This algorithm can only guarantee that the absolute value of all components of the resulting vectors are <i>strictly</i> less than
+ * <p><code><u><center>		
+ *    sqrt(1/2)x</u><br>
+ *      1-p</center></code>
+ * <br> Where <code>p</code> is the persistence of the algorithm and <code>x</code> is the maximal length of the influence vectors
+ * <br> More precisely, all absolute values are <i>weakly</i> less than
+ * <p><code><u><center>sqrt(1/2)(1-p<sup>c</sup>)x</u><br>
+ * 							1-p</center></code>
+ * <br> Where <code>c</code> is the octave count of the algorithm
+ * 
+ * <p>It can also be noted that this algorithm approximately normally distributes the values within the interval, thus for normalized influence vectors, the results will be generally within 1 and -1
+ * <br>Also, it can be noted that this algorithm is continuous and differentiable at all values
  * @author Gareth Kmet
  *
  */
-public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibilityIndex, PerlinGenOctInfluenceVectorPosibilityIndex{
+public final class PerlinNoise implements PerlinInfluenceGenerator{
 	/**
 	 * Constants representing the index of corner masks used throughout
 	 * <p><b>Masks</b> - Total number of masks
@@ -42,7 +58,7 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	private final Random random;
 	
 	/**
-	 * The number of recursive algorithms the perlin noise will go throuhg
+	 * The number of recursive algorithms the perlin noise will go through
 	 */
 	private int octaves = 1;
 	/**
@@ -74,8 +90,8 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 */
 	private final boolean runPossibilities;
 	
-	private final PerlinGenMainInfluenceVectorPosibilityIndex mainPosIndex;
-	private final PerlinGenOctInfluenceVectorPosibilityIndex octPosIndex;
+	private final PerlinInfluenceGenerator influenceGenerator;
+	
 	
 	/**
 	 * Generates a new PerlinNoise algorithm instance with a set square pixel size assuming that values can only take on a single float
@@ -93,27 +109,23 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 * @param possibilities - different {@link Vectornf} that the influence vectors can be
 	 */
 	public PerlinNoise(int psize, Vectornf[] possibilities) {
-		this(psize, possibilities, null, null);
+		this(psize, possibilities, null);
 	}
 	
 	/**
 	 * Generates a new PerlinNoise algorithm instance with a set square pixel size
-	 * <br> Overrides the methods for influence vector choices
 	 * 
 	 * @param psize - the amount of pixels that the chunk is wide and tall
 	 * @param possibilities - different {@link Vectornf} that the influence vectors can be
-	 * @param m - {@link PerlinGenMainInfluenceVectorPosibilityIndex}, uses the default method if <code>null</code>
-	 * @param o - {@link PerlinGenOctInfluenceVectorPosibilityIndex}, uses the default method if <code>null</code>
+	 * @param influence - a {@link PerlinInfluenceGenerator}, uses the default methods if null
 	 */
-	public PerlinNoise(int psize, Vectornf[] possibilities, PerlinGenMainInfluenceVectorPosibilityIndex m, PerlinGenOctInfluenceVectorPosibilityIndex o) {
+	public PerlinNoise(int psize, Vectornf[] possibilities, PerlinInfluenceGenerator influence) {
 		this.psize=psize;
 		random = new Random();
 		this.possibilities=possibilities;
 		this.runPossibilities = possibilities.length>1;
 		setOctaves(1,1);
-		
-		mainPosIndex = m==null?this:m;
-		octPosIndex = o==null?this:o;
+		influenceGenerator = influence == null ? this : influence;
 	}
 	
 	/**
@@ -123,12 +135,13 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 * @param lacunarity - the number of subdivisions of chunks per octave
 	 */
 	public void setOctaves(int octaves, int lacunarity) {
+		/*
 		if(octaves==this.octaves && lacunarity==this.lacunarity) {
 			return;
 		}else if(lacunarity==this.lacunarity || octaves == 1) {
-			setOctaves(octaves, lacunarity);
+			setOctaves(octaves);
 			return; 
-		}
+		}*/
 		octaveDataSets = new PerlinOctave[octaves];
 		
 		this.octaves = octaves;
@@ -146,6 +159,7 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 * <br><b>Assertion:</b> the {@link PerlinOctave#psize} must be divisible by <code>lacunarity^octave</code>
 	 * @param octaves - the number of octaves to go through
 	 */
+	@Deprecated
 	public void setOctaves(int octaves) {
 		if(octaves==this.octaves) {
 			return;
@@ -205,18 +219,17 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 */
 	public PerlinReturn perlin(long seed, int cx, int cy){
 		PerlinOctave oct = octaveDataSets[0];
+		PerlinOctaveChunkData d = new PerlinOctaveChunkData(0, cx, cy, cx, cy, null);
 		
 		Vectornf[][] values = new Vectornf[oct.psize()][oct.psize()];
 		
-		int ocx = cx;
-		int ocy = cy;
 		
-		Vector2v[] invecs = genInfluenceVectors(seed, ocx, ocy, false);
+		Vector2v[] invecs = genInfluenceVectors(seed, d);
 		Vectornf[][] pixs = Perlinification.perlinAChunk(invecs, oct);
 		
 		Vectornf[][] subOctPixs = null;
 		if(octaves>1) {
-			subOctPixs = perlinOctave(seed+1, ocx, ocy, 1);
+			subOctPixs = perlinOctave(seed+1, d);
 		}
 			
 		
@@ -242,27 +255,28 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	 * Runs the perlin algorithm recursively on the suboctaves until there are no more octaves
 	 * 
 	 * @param seed - the seed to generate random influence vectors
-	 * @param cx - the x position of the previous octave's chunk
-	 * @param cy - the y position of the previous octave's chunk
-	 * @param octn - the number of the current octave
+	 * @param parent - the octave chunk data of the previous octave
 	 * @return <code>Vectornf[][]</code> - array with total values of all pixels in the octave. Size of the square array is equal to <code>oct(n-1).psize()</code>
 	 */
-	private Vectornf[][] perlinOctave(long seed, int cx, int cy, int octn) {
+	private Vectornf[][] perlinOctave(long seed, PerlinOctaveChunkData parent) {
+		int octn = parent.octLevel+1;
 		
 		PerlinOctave oct = octaveDataSets[octn];
+		
 		
 		Vectornf[][] values = new Vectornf[oct.psize()*lacunarity][oct.psize()*lacunarity];
 		
 		for(int i=0; i<lacunarity; i++) {for(int j=0; j<lacunarity; j++) {
-			int ocx = cx*lacunarity+i;
-			int ocy = cy*lacunarity+j;
+			int ocx = parent.cx*lacunarity+i;
+			int ocy = parent.cy*lacunarity+j;
+			PerlinOctaveChunkData thisC = new PerlinOctaveChunkData(octn, i, j, ocx, ocy, parent);
 			
-			Vector2v[] invecs = genInfluenceVectors(seed, ocx, ocy, true);
+			Vector2v[] invecs = genInfluenceVectors(seed, thisC);
 			Vectornf[][] pixs = Perlinification.perlinAChunk(invecs, oct);
 			
 			Vectornf[][] subOctPixs = null;
 			if(octn<octaves-1) {
-				subOctPixs = perlinOctave(seed+1, ocx, ocy, octn+1);
+				subOctPixs = perlinOctave(seed+1, thisC);
 			}
 			
 			
@@ -281,12 +295,11 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	/**
 	 * Generates random normalized influence vectors for a chunk at a given position
 	 * @param seed - the seed to randomly generate the influence vectors
-	 * @param cx - the x position of the chunk
-	 * @param cy - the y position of the chunk
+	 * @param c - the octave chunk data of the chunk calling this method
 	 * @return <code>Vector2v[]</code> - an influence vector with length equal to 1 for each {@link #MASKS}
 	 */
-	private Vector2v[] genInfluenceVectors(long seed, int cx, int cy, boolean isOct) {
-		int[] index = genInfluenceVectorIndecies(cx, cy);
+	private Vector2v[] genInfluenceVectors(long seed, PerlinOctaveChunkData c) {
+		int[] index = genInfluenceVectorIndecies(c.cx, c.cy);
 		
 		Vector2v[] vecs = new Vector2v[MASKS];
 		for(int i=0; i<MASKS; i++) {
@@ -294,23 +307,23 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 //			Generate random float index for the angle of the index vector
 			float f = Util.getRandomFloatAtIndex(index[i], random, seed, 2*(float)Math.PI);
 			
-//			Generate random int index for the influence vector possibility if there is more than one possibility
-			int in=0;
-			if(runPossibilities) {
-				in = isOct? 
-							octPosIndex.perlinGenOctInfluenceVectorPosibilityIndex(seed, i, index[i], cx, cy) :
-							mainPosIndex.perlinGenMainInfluenceVectorPosibilityIndex(seed, i, index[i], cx, cy);
-				if(in==-1) {
-					in = isOct? 
-							this.perlinGenOctInfluenceVectorPosibilityIndex(seed, i, index[i], cx, cy) :
-							this.perlinGenMainInfluenceVectorPosibilityIndex(seed, i, index[i], cx, cy);
-				}
+
+			
+			Vectornf influence;
+			if(!c.isMain()) {
+				influence = influenceGenerator.perlinOctInfluenceVector(seed, index[i], i, c);
+				if(influence == null)
+						influence = this.perlinOctInfluenceVector(seed, index[i], i, c);
+			}else {
+				influence = influenceGenerator.perlinMainInfluenceVector(seed, index[i], c.cx, c.cy, i);
+				if(influence == null)
+						influence = this.perlinMainInfluenceVector(seed, index[i], c.cx, c.cy, i);
 			}
 			
 			Vector2f p = Vector2f.fromPolar(1, f);
 			vecs[i] = new Vector2v(
-						Vectornf.scale(possibilities[in], p.x),
-						Vectornf.scale(possibilities[in], p.y)
+						Vectornf.scale(influence, p.x),
+						Vectornf.scale(influence, p.y)
 					);
 		}
 		
@@ -318,14 +331,17 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 	}
 	
 	@Override
-	public int perlinGenOctInfluenceVectorPosibilityIndex(long seed, int mask, int spiralIndex, int cx, int cy) {
-		return Util.getRandomIntAtIndex(spiralIndex, random, seed, possibilities.length);
+	public Vectornf perlinMainInfluenceVector(long seed, int spiralIndex, int cx, int cy, int mask) {
+		int in=0;
+		if(runPossibilities)
+			in = Util.getRandomIntAtIndex(spiralIndex, random, seed, possibilities.length);
+		return possibilities[in];
 	}
 
 	@Override
-	public int perlinGenMainInfluenceVectorPosibilityIndex(long seed, int mask, int spiralIndex, int cx, int cy) {
-		return Util.getRandomIntAtIndex(spiralIndex, random, seed, possibilities.length);
-	};
+	public Vectornf perlinOctInfluenceVector(long seed, int spiralIndex, int mask, PerlinOctaveChunkData octData) {
+		return perlinMainInfluenceVector(seed, spiralIndex, octData.cx, octData.cy, mask);
+	}
 	
 	/**
 	 * Converts the Cartesian location of each corner of the chunk into a location on a spiral.
@@ -364,6 +380,60 @@ public final class PerlinNoise implements PerlinGenMainInfluenceVectorPosibility
 			return Vectornf.scale(Vectornf.sub(values[px][py], Vectornf.Const(values[px][py].size(),min)),1f/(max-min));
 		}
 	}
+	
+	
+	/**
+	 * A data class which stores information about a current chunk in a current octave
+	 * <p>Contains
+	 * <ul>
+	 * 	<li><b>octLevel</b> - the octave number where <code>0</code> is the main level</li>
+	 * 	<li><b>rx</b> - the relative x position of this chunk within the parent chunk</li>
+	 * 	<li><b>ry</b> - the relative y position of this chunk within the parent chunk</li>
+	 * 	<li><b>cx</b> - the chunk x coordinate used for the generation of its unique index<br>
+	 * 		<i>This is the same as <code>rx</code> for the main level</i></li>
+	 * 	<li><b>cy</b> - the chunk y coordinate used for the generation of its unique index<br>
+	 * 		<i>This is the same as <code>ry</code> for the main level</i></li>
+	 * 	<li><b>parent</b> - the previous octave<br>
+	 * 		<i>This is <code>null</code> for the main level</i></li>
+	 * </ul>
+	 * @author Gareth Kmet
+	 *
+	 */
+	public record PerlinOctaveChunkData(int octLevel, int rx, int ry, int cx, int cy, PerlinOctaveChunkData parent){
+		/**
+		 * Returns if this is the main level
+		 * @return <b><code>true</code></b> if this is the main level and <b><code>false</code></b> if this is a subsequent octave
+		 */
+		public boolean isMain() {
+			return parent==null;
+		}
+		
+		/**
+		 * Retrieves the main octave chunk data
+		 * @return The main level octave chunk data
+		 */
+		public PerlinOctaveChunkData getMain() {
+			if(isMain())return this;
+			return parent.getMain();
+		}
+		
+		/**
+		 * Runs a boolean <code>AND</code> operation on each octave. 
+		 * This starts from this instance and performs the operation on each parent octave
+		 * @param consumer - the condition
+		 * @return <b><code>true</code></b> if <u>all</u> previous octaves and this match the given condition
+		 * <br><b><code>false</code></b> if at least one octave fails
+		 */
+		public boolean forEach(Predicate<PerlinOctaveChunkData> consumer) {
+			boolean thisTest = consumer.test(this);
+			if(!isMain()) {
+				return thisTest && parent.forEach(consumer); 
+			}
+			return thisTest;
+		}
+	}
+	
+		
 
 
 	

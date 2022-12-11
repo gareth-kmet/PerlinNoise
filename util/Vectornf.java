@@ -228,7 +228,7 @@ public sealed class Vectornf permits Vector2f{
 	
 	@Override
 	public String toString() {
-		return "Vector"+size+"f "+vec.toString();
+		return "Vector"+size+"f "+Arrays.deepToString(vec);
 	}
 	
 	

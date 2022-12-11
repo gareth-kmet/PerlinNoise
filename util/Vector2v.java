@@ -54,5 +54,10 @@ public final class Vector2v {
 	public Vectornf dot(Vector2f b) {
 		return dot(this, b);
 	}
+	
+	@Override
+	public String toString() {
+		return "Vector2v{\n         "+a.toString()+"\n         "+b.toString()+"\n}";
+	}
 
 }

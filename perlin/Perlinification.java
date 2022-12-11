@@ -1,5 +1,6 @@
 package perlin;
 
+import perlin.PerlinNoise.PerlinOctaveChunkData;
 import util.Vector2f;
 import util.Vector2v;
 import util.Vectornf;
@@ -114,41 +115,35 @@ public final class Perlinification {
 	}
 	
 	/**
-	 * Override interface for the choice of {@link PerlinNoise#possibilities} when generating an influence vector on the first octave
-	 * <p> If one of the methods returns <code>-1</code>, then the default method will used
+	 * Overrides the default methods to find an influence vector at a given location
+	 * <p>Methods can return <code>null</code> to use the default methods for a chunk
+	 * <br>Methods should return the same value for equal spiral indices
 	 * @author Gareth Kmet
 	 *
 	 */
-	public interface PerlinGenMainInfluenceVectorPosibilityIndex{
+	public interface PerlinInfluenceGenerator{
 		/**
+		 * Returns an influence for a given chunk corner on the first octave
 		 * 
-		 * @param seed - the random seed that the algorithm is running on
-		 * @param mask - the corner of the influence vector
-		 * @param spiralIndex - the calculated unique index of the chunk
-		 * @param cx - the chunk x position
-		 * @param cy - the chunk y position
-		 * @return the index of the possibility influence vector
+		 * @param seed - the seed that would be used to generate the random index
+		 * @param spiralIndex - the unique index of the corner
+		 * @param cx - the x position of the chunk
+		 * @param cy - the y position of a chunk
+		 * @param mask - the {@link PerlinNoise#MASKS}
+		 * @return the influence vector to be used for this corner or <code>null</code> to use the default methods
 		 */
-		public int perlinGenMainInfluenceVectorPosibilityIndex(
-				long seed, int mask, int spiralIndex, int cx, int cy);
+		public Vectornf perlinMainInfluenceVector(long seed, int spiralIndex, int cx, int cy, int mask);
+		
+		/**
+		 * Returns an influence vector for a given chunk corner on the subsequent octaves
+		 * 
+		 * @param seed - the seed that would be used to generate the random index
+		 * @param spiralIndex - the unique index of the corner
+		 * @param mask - the {@link PerlinNoise#MASKS}
+		 * @param octData - the {@link PerlinOctaveChunkData} of the octave chunk 
+		 * @return the influence vector to be used for this corner or <code>null</code> to use the default methods
+		 */
+		public default Vectornf perlinOctInfluenceVector(long seed, int spiralIndex, int mask, PerlinNoise.PerlinOctaveChunkData octData) {return null;}
 	}
 	
-	/**
-	 * Override interface for the choice of {@link PerlinNoise#possibilities} when generating an influence vector on the subsequent octave
-	 * @author Gareth Kmet
-	 *
-	 */
-	public interface PerlinGenOctInfluenceVectorPosibilityIndex{
-		/**
-		 * 
-		 * @param seed - the random seed that the algorithm is running on
-		 * @param mask - the corner of the influence vector
-		 * @param spiralIndex - the calculated unique index of the chunk
-		 * @param cx - the chunk x position
-		 * @param cy - the chunk y position
-		 * @return the index of the possibility influence vector
-		 */
-		public int perlinGenOctInfluenceVectorPosibilityIndex(
-				long seed, int mask, int spiralIndex, int cx, int cy);
-	}
 }

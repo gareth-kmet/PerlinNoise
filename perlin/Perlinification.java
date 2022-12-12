@@ -1,6 +1,7 @@
 package perlin;
 
 import perlin.PerlinNoise.PerlinOctaveChunkData;
+import util.Util;
 import util.Vector2f;
 import util.Vector2v;
 import util.Vectornf;
@@ -79,24 +80,11 @@ public final class Perlinification {
 		for(int x=0;x<size;x++) {
 			for(int y=0;y<size;y++) {
 				float aProp = (lr?x:y)*psize;
-				mask[x][y] = lerp(m1[x][y],m2[x][y], aProp);
+				mask[x][y] = Util.lerps(m1[x][y],m2[x][y], aProp);
 			}
 		}
 		
 		return mask;
-	}
-	
-	/**
-	 * Lerps two values together given a proportional between 0-1.
-	 * <br>Uses a smoothing function to result in a non-linear lerp so that the edges of a chunk will not have kinks<ul>
-	 * @param val1 - the first value
-	 * @param val2 - the second value
-	 * @param aProp - the linear proportion of the location between the two values
-	 * @return <b><code>Vectornf</code></b> - the resulting value
-	 */
-	private static Vectornf lerp(Vectornf val1, Vectornf val2, float aProp) {
-		float a = (float)(6*Math.pow(aProp, 5)-15*Math.pow(aProp, 4)+10*Math.pow(aProp, 3));
-		return Vectornf.add(val1, Vectornf.scale(Vectornf.sub(val2, val1), a));
 	}
 	
 	/**

@@ -230,6 +230,23 @@ public sealed class Vectornf permits Vector2f{
 	public String toString() {
 		return "Vector"+size+"f "+Arrays.deepToString(vec);
 	}
+
+	/**
+	 * Lerps two values together given a proportional between 0-1.
+	 * @param val1 - the first value
+	 * @param val2 - the second value
+	 * @param aProp - the linear proportion of the location between the two values
+	 * @return <b><code>Vectornf</code></b> - the resulting value
+	 */
+	public static Vectornf lerp(Vectornf val1, Vectornf val2, float aProp) {
+		assertCompatable(val1, val2);
+		
+		Float[] newVector = new Float[val1.size];
+		for(int i=0; i<val1.size; i++) {
+			newVector[i] = aProp*val2.get(i) + (1-aProp)*val1.get(1);
+		}
+		return new Vectornf(newVector);
+	}
 	
 	
 	

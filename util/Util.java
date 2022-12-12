@@ -75,5 +75,18 @@ public final class Util {
 		}
 		return p;
 	}
+
+	/**
+	 * Lerps two values together with a smoothing function given a proportional between 0-1.
+	 * <br>Uses a smoothing function to result in a non-linear lerp so that the edges of a chunk will not have kinks<ul>
+	 * @param val1 - the first value
+	 * @param val2 - the second value
+	 * @param aProp - the linear proportion of the location between the two values
+	 * @return <b><code>Vectornf</code></b> - the resulting value
+	 */
+	public static Vectornf lerps(Vectornf val1, Vectornf val2, float aProp) {
+		float a = (float)(6*Math.pow(aProp, 5)-15*Math.pow(aProp, 4)+10*Math.pow(aProp, 3));
+		return Vectornf.lerp(val1, val2, a);
+	}
 	
 }

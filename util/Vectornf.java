@@ -9,7 +9,7 @@ import java.util.Arrays;
  * 
  * @author Gareth Kmet
  */
-public sealed class Vectornf permits Vector2f {
+public sealed class Vectornf implements InnerProductFloatVectorSpace<Vectornf> permits Vector2f {
 
 	/**
 	 * The dimension of the vector
@@ -112,134 +112,60 @@ public sealed class Vectornf permits Vector2f {
 		if (a.size != b.size) { throw new IllegalArgumentException(); }
 	}
 
-	/**
-	 * Adds two {@link Vectornf} together <br>
-	 * Does not change the contents of <b>a</b> and <b>b</b>
-	 * 
-	 * @param  a
-	 *           {@link Vectornf}
-	 * @param  b
-	 *           {@link Vectornf}
-	 * 
-	 * @return   a new {@link Vectornf} containing the sum
-	 */
-	public static Vectornf add(Vectornf a, Vectornf b) {
-		assertCompatable(a, b);
+	@Override
+	public Vectornf add(Vectornf b) {
+		assertCompatable(this, b);
 
-		Float[] c = new Float[a.size];
-		for (int i = 0; i < a.size; i++) { c[i] = a.get(i) + b.get(i); }
+		Float[] c = new Float[b.size];
+		for (int i = 0; i < b.size; i++) { c[i] = this.get(i) + b.get(i); }
 		return new Vectornf(c);
 	}
 
-	/**
-	 * Adds the components of a {@link Vectornf} to the components of this
-	 * instance <br>
-	 * Does not modify the contents of <b>b</b>
-	 * 
-	 * @param  b
-	 * 
-	 * @return   this instance
-	 */
-	public Vectornf add(Vectornf b) {
+	@Override
+	public Vectornf iadd(Vectornf b) {
 		assertCompatable(this, b);
 
 		for (int i = 0; i < size; i++) { vec[i] += b.get(i); }
 		return this;
 	}
 
-	/**
-	 * Subtracts two {@link Vectornf} <br>
-	 * Does not change the contents of <b>a</b> and <b>b</b>
-	 * 
-	 * @param  a
-	 *           {@link Vectornf}
-	 * @param  b
-	 *           {@link Vectornf}
-	 * 
-	 * @return   a new {@link Vectornf} containing the sum
-	 */
-	public static Vectornf sub(Vectornf a, Vectornf b) {
-		assertCompatable(a, b);
-
-		Float[] c = new Float[a.size];
-		for (int i = 0; i < a.size; i++) { c[i] = a.get(i) - b.get(i); }
-		return new Vectornf(c);
-	}
-
-	/**
-	 * Subtracts the components of a {@link Vectornf} to the components of this
-	 * instance <br>
-	 * Does not modify the contents of <b>b</b>
-	 * 
-	 * @param  b
-	 * 
-	 * @return   this instance
-	 */
+	@Override
 	public Vectornf sub(Vectornf b) {
 		assertCompatable(this, b);
 
-		for (int i = 0; i < size; i++) { vec[i] -= -b.get(i); }
-		return this;
-	}
-
-	/**
-	 * Scales a {@link Vectornf} by a float <br>
-	 * Does not change the contents of <b>a</b>
-	 * 
-	 * @param  a
-	 *           {@link Vectornf}
-	 * @param  b
-	 *           {@link float}
-	 * 
-	 * @return   a new {@link Vectornf} representing the scaled contents
-	 */
-	public static Vectornf scale(Vectornf a, float b) {
-		Float[] c = new Float[a.size];
-		for (int i = 0; i < a.size; i++) { c[i] = a.get(i) * b; }
+		Float[] c = new Float[b.size];
+		for (int i = 0; i < b.size; i++) { c[i] = this.get(i) - b.get(i); }
 		return new Vectornf(c);
 	}
 
-	/**
-	 * Scales the components of this instance by a float
-	 * 
-	 * @param  b
-	 *           {@link float}
-	 * 
-	 * @return   this instance
-	 */
+	@Override
+	public Vectornf isub(Vectornf b) {
+		assertCompatable(this, b);
+
+		for (int i = 0; i < size; i++) { vec[i] -= b.get(i); }
+		return this;
+	}
+
+	@Override
 	public Vectornf scale(float b) {
+		Float[] c = new Float[this.size];
+		for (int i = 0; i < this.size; i++) { c[i] = this.get(i) * b; }
+		return new Vectornf(c);
+	}
+
+	@Override
+	public Vectornf iscale(float b) {
 		for (int i = 0; i < size; i++) { vec[i] *= b; }
 		return this;
 	}
 
-	/**
-	 * Calculates the dot product of two {@link Vectornf}
-	 * 
-	 * @param  a
-	 *           {@link Vectornf}
-	 * @param  b
-	 *           {@link Vectornf}
-	 * 
-	 * @return   {@link float} representing the dot product
-	 */
-	public static float dot(Vectornf a, Vectornf b) {
-		assertCompatable(a, b);
+	@Override
+	public float dot(Vectornf b) {
+		assertCompatable(this, b);
 		float f = 0;
 
-		for (int i = 0; i < a.size; i++) { f += a.get(i) * b.get(i); }
+		for (int i = 0; i < b.size; i++) { f += this.get(i) * b.get(i); }
 		return f;
-	}
-
-	/**
-	 * Calculates the dot product with a {@link Vectornf}
-	 * 
-	 * @param  b
-	 *           {@link Vectornf}
-	 * 
-	 * @return   {@link float} representing the dot product
-	 */
-	public float dot(Vectornf b) {
-		return dot(this, b);
 	}
 
 	/**
@@ -267,24 +193,11 @@ public sealed class Vectornf permits Vector2f {
 		return "Vector" + size + "f " + Arrays.deepToString(vec);
 	}
 
-	/**
-	 * Lerps two values together given a proportional between 0-1.
-	 * 
-	 * @param  val1
-	 *               - the first value
-	 * @param  val2
-	 *               - the second value
-	 * @param  aProp
-	 *               - the linear proportion of the location between the two
-	 *               values
-	 * 
-	 * @return       <b><code>Vectornf</code></b> - the resulting value
-	 */
-	public static Vectornf lerp(Vectornf val1, Vectornf val2, float aProp) {
-		assertCompatable(val1, val2);
-
-		Float[] newVector = new Float[val1.size];
-		for (int i = 0; i < val1.size; i++) { newVector[i] = aProp * val2.get(i) + (1 - aProp) * val1.get(i); }
+	@Override
+	public Vectornf lerp(Vectornf b, float f) {
+		// TODO Auto-generated method stub
+		Float[] newVector = new Float[this.size];
+		for (int i = 0; i < this.size; i++) { newVector[i] = f * b.get(i) + (1 - f) * this.get(i); }
 		return new Vectornf(newVector);
 	}
 

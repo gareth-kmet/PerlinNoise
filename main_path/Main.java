@@ -13,7 +13,7 @@ import perlin.PerlinNoise;
 import util.Vectornf;
 
 class Main {
-	static final int CHUNK_SIZE = 4, PIXEL_SIZE = 256, MULTI = 1, R = 1;
+	static final int CHUNK_SIZE = 3, PIXEL_SIZE = 256, MULTI = 1, R = 1;
 	static Vectornf[][][][] pixs;
 	static Vectornf[][] ps;
 	static Frame f = new Frame();
@@ -22,10 +22,13 @@ class Main {
 	}
 	static long seed = /* new Random().nextInt(); */ 1646419626;
 	static {
-		System.out.println(seed);
+//		System.out.println(seed);
 	}
 	static PerlinNoise<Vectornf> p = new PerlinNoise<Vectornf>(Vectornf.class, PIXEL_SIZE,
 			Vectornf.genStandardVectors(3));
+	
+	static PerlinNoise<Vectornf> p2 = new PerlinNoise<Vectornf>(Vectornf.class, PIXEL_SIZE,
+			Vectornf.genStandardVectors(1));
 
 	static float max, min, mmax;
 
@@ -53,7 +56,10 @@ class Main {
 	}
 
 	static public void mainy() {
+		System.out.println("X,Y,Z,c,");
+		System.out.println("0,0,1000,1,");
 		p.setOctaves(oct, lac, per);
+		p2.setOctaves(oct, lac, per);
 		Main.perl();
 
 		Canvas c = new MainCanvas(mmax, ps);
@@ -74,13 +80,19 @@ class Main {
 						min = Math.min(v.get(i), min);
 					}
 				});
+				Vectornf[][] pr2 = p2.perlin(seed, x, y, v->{});
 				pixs[x][y] = pr;
+				for(int i=0; i<pr.length; i++) {
+					for(int j=0;j<pr[i].length; j++) {
+						pr[i][j].iscale(pr2[i][j].get(0));
+					}
+				}
 			}
 		}
 		mmax = Math.max(Math.abs(max), Math.abs(min));
-		System.out.println(max + " " + min + " " + (Math.sqrt(1 / 2) * (1f - Math.pow(per, oct)) / (1f - per)));
+//		System.out.println(max + " " + min + " " + (Math.sqrt(1 / 2) * (1f - Math.pow(per, oct)) / (1f - per)));
 		long t = System.currentTimeMillis() - time;
-		System.out.println(t);
+//		System.out.println(t);
 
 		ps = new Vectornf[Main.CHUNK_SIZE * Main.PIXEL_SIZE][Main.CHUNK_SIZE * Main.PIXEL_SIZE];
 		for (int i = 0; i < Main.CHUNK_SIZE * Main.PIXEL_SIZE; i++)
@@ -91,27 +103,39 @@ class Main {
 			for (int cy = 0; cy < Main.CHUNK_SIZE; cy++) {
 				for (int px = 0; px < Main.PIXEL_SIZE; px++) {
 					for (int py = 0; py < Main.PIXEL_SIZE; py++) {
-
-						if (px == 0 || py == 0 || px == 255 || py == 255) {
-							// continue;
-						}
+						
+						
 
 						int x = Main.PIXEL_SIZE * cx + px;
 						int y = Main.PIXEL_SIZE * cy + py;
+						
+						int csf = x+y;
+
+						if (px%64==0 || py%64==0) {
+							csf=-1000;
+						}
 
 						Vectornf ct = pixs[cx][cy][px][py];
 
 						// int x2 = x+Math.round(mmax/ct.get(0));
 						// int y2 = y+Math.round(mmax/ct.get(1));
 
-						// int x2 = x + Math.round(100 * ct.get(0));
-						// int y2 = y + Math.round(100 * ct.get(1));
+						float x2 = x + 1000 * ct.get(0);
+						float y2 = y + 1000 * ct.get(1);
+						float z2 = 1000*ct.get(2);
+						
+//						System.out.println("::"+x2+"::"+y2+"::"+z2+"::0::A::1::0::0::0::0;");
+						System.out.println(x2+","+y2+","+z2+","+csf);
+						
+//						int x2=x; int y2=y;
 
-						float R = Math.abs(ct.get(0)) / mmax;
-						float G = Math.abs(ct.get(1)) / mmax;
-						float B = Math.abs(ct.get(2)) / mmax;
-
-						ps[x][y] = new Vectornf(R, G, B);
+//						float R = Math.abs(ct.get(0)) / mmax;
+//						float G = Math.abs(ct.get(1)) / mmax;
+//						float B = Math.abs(ct.get(2)) / mmax;
+						
+						if(0<=x2-1 && x2+1<ps.length && 0<=y2-1 && y2+1<ps[0].length)
+//							ps[x2][y2] = new Vectornf(R, G, B);
+							ps[Math.round(x2)][Math.round(y2)] = new Vectornf(0f, 0f, 1f);
 
 						/*
 						 * float r = Math.abs(ct.get(0))/mmax; float g_=
@@ -228,7 +252,36 @@ class MainCanvas extends Canvas {
 				// Vectornf a= Util.lerps(new Vectornf(1f,0f), new
 				//// Vectornf(0f,1f), r);
 				// g.setColor(new Color(a.get(0),0f,a.get(1)));
-				g.setColor(new Color(ps[x][y].get(0), ps[x][y].get(1), ps[x][y].get(2)));
+				
+				if(ps[x][y].size()==1) {
+					Vectornf a = new Vectornf(0f,0f,0f);
+					int c=0;
+					
+					for(int i=-1; i<=1; i++) {
+						if(0<=x+i && x+i<ps.length)
+							for(int j=-1; j<=1; j++) {
+								if(0<=y+j && y+j<ps[x+i].length) {
+									if(ps[x+i][y+j].size()!=1) {
+										a.iadd(ps[x+i][y+j]);
+										c++;
+									}
+									
+								}
+							}
+					}
+					if(c!=0) {
+						a.iscale(1f/c);
+					}
+					
+					
+					
+//					g.setColor(new Color(a.get(0), a.get(1), a.get(2)));
+					g.setColor(Color.BLACK);
+				}else {
+					g.setColor(new Color(ps[x][y].get(0), ps[x][y].get(1), ps[x][y].get(2)));
+				}
+				
+				
 				g.fillRect(x, y, 1, 1);
 
 			}

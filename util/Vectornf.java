@@ -109,7 +109,10 @@ public sealed class Vectornf implements InnerProductFloatVectorSpace<Vectornf> p
 	 *          - a vector
 	 */
 	protected static void assertCompatable(Vectornf a, Vectornf b) {
-		if (a.size != b.size) { throw new IllegalArgumentException(); }
+		
+		if (a.size != b.size) { 
+			System.out.println(a.size()+" "+b.size());
+			throw new IllegalArgumentException(); }
 	}
 
 	@Override
